@@ -23,6 +23,7 @@ using v8::Function;
 using v8::Handle;
 using v8::External;
 using v8::FunctionTemplate;
+using v8::Isolate;
 
 // These things need to be moved into a class, so each instance can have its own session.
 // Right now, there can only be one SANE instance at a time.
@@ -55,7 +56,7 @@ public:
         Nan::HandleScope scope;
 
         Local<ObjectTemplate> result = Nan::New<ObjectTemplate>();
-        Local<Object> object = result->NewInstance();
+        Local<Object> object = Nan::NewInstance(result).ToLocalChecked();
         object->Set(Nan::New("status").ToLocalChecked(), Nan::New(status));
 
         if (status == SANE_STATUS_GOOD) {
@@ -64,7 +65,7 @@ public:
                 Local<FunctionTemplate> deviceTpl = Nan::New(SaneDevice::constructor_template);
                 Local<Function> deviceFunc = deviceTpl->GetFunction();
                 Handle<Value> deviceFuncArgs[] = { Nan::New<External>(const_cast<SANE_Device*>(deviceList[i])) };
-                Local<Value> deviceObj = deviceFunc->NewInstance(1, deviceFuncArgs);
+                Local<Value> deviceObj = Nan::NewInstance(deviceFunc, 1, deviceFuncArgs).ToLocalChecked();
                 deviceListArr->Set(i, deviceObj);
             }
             object->Set(Nan::New("deviceList").ToLocalChecked(), deviceListArr);
@@ -118,7 +119,7 @@ NAN_METHOD(GetDevicesSync) {
     status = sane_get_devices(&deviceList, localOnly);
 
     Local<ObjectTemplate> result = Nan::New<ObjectTemplate>();
-    Local<Object> object = result->NewInstance();
+    Local<Object> object = Nan::NewInstance(result).ToLocalChecked();
     object->Set(Nan::New("status").ToLocalChecked(), Nan::New(status));
 
     if (status == SANE_STATUS_GOOD) {
@@ -127,7 +128,7 @@ NAN_METHOD(GetDevicesSync) {
             Local<FunctionTemplate> deviceTpl = Nan::New(SaneDevice::constructor_template);
             Local<Function> deviceFunc = deviceTpl->GetFunction();
             Handle<Value> deviceFuncArgs[] = { Nan::New<External>(const_cast<SANE_Device*>(deviceList[i])) };
-            Local<Value> deviceObj = deviceFunc->NewInstance(1, deviceFuncArgs);
+            Local<Value> deviceObj = Nan::NewInstance(deviceFunc, 1, deviceFuncArgs).ToLocalChecked();
             deviceListArr->Set(i, deviceObj);
         }
         object->Set(Nan::New("deviceList").ToLocalChecked(), deviceListArr);
@@ -150,13 +151,13 @@ public:
         Nan::HandleScope scope;
 
         Local<ObjectTemplate> result = Nan::New<ObjectTemplate>();
-        Local<Object> object = result->NewInstance();
+        Local<Object> object = Nan::NewInstance(result).ToLocalChecked();
         object->Set(Nan::New("status").ToLocalChecked(), Nan::New(status));
         if (status == SANE_STATUS_GOOD) {
             Local<FunctionTemplate> handleTpl = Nan::New(SaneHandle::constructor_template);
             Local<Function> handleFunc = handleTpl->GetFunction();
             Handle<Value> handleFuncArgs[] = { Nan::New<External>(handle) };
-            Local<Value> handleObj = handleFunc->NewInstance(1, handleFuncArgs);
+            Local<Value> handleObj = Nan::NewInstance(handleFunc, 1, handleFuncArgs).ToLocalChecked();
             object->Set(Nan::New("handle").ToLocalChecked(), handleObj);
         }
 
@@ -210,14 +211,14 @@ NAN_METHOD(OpenSync) {
     status = sane_open(name.c_str(), &handle);
 
     Local<ObjectTemplate> result = Nan::New<ObjectTemplate>();
-    Local<Object> object = result->NewInstance();
+    Local<Object> object = Nan::NewInstance(result).ToLocalChecked();
     object->Set(Nan::New("status").ToLocalChecked(), Nan::New(status));
 
     if (status == SANE_STATUS_GOOD) {
         Local<FunctionTemplate> handleTpl = Nan::New(SaneHandle::constructor_template);
         Local<Function> handleFunc = handleTpl->GetFunction();
         Handle<Value> handleFuncArgs[] = { Nan::New<External>(handle) };
-        Local<Value> handleObj = handleFunc->NewInstance(1, handleFuncArgs);
+        Local<Value> handleObj = Nan::NewInstance(handleFunc, 1, handleFuncArgs).ToLocalChecked();
         object->Set(Nan::New("handle").ToLocalChecked(), handleObj);
     }
 
@@ -314,7 +315,7 @@ NAN_METHOD(GetOptionDescriptor) {
     Local<FunctionTemplate> descriptorTpl = Nan::New(SaneOptionDescriptor::constructor_template);
     Local<Function> descriptorFunc = descriptorTpl->GetFunction();
     Handle<Value> descriptorFuncArgs[] = { Nan::New<External>(const_cast<SANE_Option_Descriptor*>(option)) };
-    Local<Value> descriptorObj = descriptorFunc->NewInstance(1, descriptorFuncArgs);
+    Local<Value> descriptorObj = Nan::NewInstance(descriptorFunc, 1, descriptorFuncArgs).ToLocalChecked();
     
     info.GetReturnValue().Set(descriptorObj);
 }
@@ -417,7 +418,7 @@ NAN_METHOD(GetParameters) {
         Local<FunctionTemplate> paramsTpl = Nan::New(SaneParameters::constructor_template);
         Local<Function> paramsFunc = paramsTpl->GetFunction();
         Handle<Value> paramsFuncArgs[] = { Nan::New<External>(parameters) };
-        Local<Value> paramsObj = paramsFunc->NewInstance(1, paramsFuncArgs);
+        Local<Value> paramsObj = Nan::NewInstance(paramsFunc, 1, paramsFuncArgs).ToLocalChecked();
         info.GetReturnValue().Set(paramsObj);
 	} else {
         info.GetReturnValue().Set(Nan::New(status));
@@ -459,7 +460,7 @@ public:
         Nan::HandleScope scope;
 
         Local<ObjectTemplate> result = Nan::New<ObjectTemplate>();
-        Local<Object> object = result->NewInstance();
+        Local<Object> object = Nan::NewInstance(result).ToLocalChecked();
         object->Set(Nan::New("status").ToLocalChecked(), Nan::New(status));
 
         if (status == SANE_STATUS_GOOD) {
@@ -529,8 +530,8 @@ NAN_METHOD(ReadSync) {
 	status = sane_read(handle->getHandle(), buf, node::Buffer::Length(info[1].As<Object>()),
 		&len);
 
-	Local<ObjectTemplate> result = ObjectTemplate::New();
-	Local<Object> object = result->NewInstance();
+	Local<ObjectTemplate> result = ObjectTemplate::New(Isolate::GetCurrent());
+	Local<Object> object = Nan::NewInstance(result).ToLocalChecked();
 	object->Set(Nan::New("status").ToLocalChecked(), Nan::New(status));
 	object->Set(Nan::New("length").ToLocalChecked(), Nan::New(len));
     info.GetReturnValue().Set(object);
